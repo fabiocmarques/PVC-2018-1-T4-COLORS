@@ -3,8 +3,12 @@ import numpy as np
 import imutils
 import argparse
 import glob
+import re
+import os
 from scipy.stats import itemfreq
 
+def tInt(x):
+    return int(x)
 
 def vectorized_form(img):
     B, G, R = [img[:, :, x] for x in range(3)]
@@ -53,29 +57,79 @@ def main1():
     args = ap.parse_args()
 
     if not args.full:
-        imageTrain = np.array([11, 24, 44, 83, 331, 429, 789, 841], dtype="uint32")
-        imageResults = np.array([243, 278], dtype="uint32")
         images = "./Images/SkinDataset/ORI"
         imagesGt = "./Images/SkinDataset/GT"
     else:
-        imageTrain = np.array(np.arange(1, 783, dtype="uint32"))
-        imageConsolidate = np.array(np.arange(783, 951, dtype="uint32"))
-        imageResults = np.array(np.arange(951, 1119, dtype="uint32"))
         images = "./Images/ORI"
         imagesGt = "./Images/GT"
 
-    for imageName in glob.glob(images + "/Train/*.jpg"):
+    turnInt = np.vectorize(tInt)
+    gtDir= imagesGt + "/Test/"
+
+    accDict = dict()
+    jacDict = dict()
+
+    for imageName in glob.glob(images + "/Test/*.jpg"):
+
+        imageNumber = turnInt(re.findall(r'\d+', imageName))[0]
+        imageGtName = gtDir + str(imageNumber) + ".jpg"
+        ImageGt = cv2.imread(imageGtName, 0)
+        gtNonZero = np.count_nonzero(ImageGt)
+        ImageGt = (ImageGt != 0)
+        ImageGtGS = np.uint8(np.where(ImageGt, 255, 0))
+        
+
         frame = cv2.imread(imageName)
         mapF = vectorized_form(frame)
-        mapBG = np.uint8(np.where(mapF, 255, 0))
-        newImage = cv2.bitwise_and(frame, frame, mask=mapBG)
+        mapGS = np.uint8(np.where(mapF, 255, 0))
+        newImage = cv2.bitwise_and(frame, frame, mask=mapGS)
+        classNonZero = np.count_nonzero(mapGS)
+
+        #cv2.imwrite(str(imageNumber)+"-Mask.png", mapGS)
+
+        
+        compImg = (mapGS == ImageGtGS)
+        compImg = np.uint8(np.where(compImg, 255, 0))
+        acc = np.count_nonzero(compImg)
+        accDict[imageNumber] = acc/(mapGS.size)
+
+        andImg = cv2.bitwise_and(mapGS, ImageGtGS)
+        orImg = cv2.bitwise_or(mapGS, ImageGtGS)
+        andNum = np.count_nonzero(andImg)
+        orNum = np.count_nonzero(orImg)
+        jac = andNum/orNum
+        jacDict[imageNumber] = jac
+
+
+        print("Acc - Image number " + str(imageNumber) + ":")
+        print(accDict[imageNumber])
+        print("Jac - Image number " + str(imageNumber) + ":")
+        print(jacDict[imageNumber])
+        #cv2.imshow("AndOr", np.hstack([andImg, orImg]))
+        #cv2.imshow("Comp", compImg)
+
         # print(mapBG)
-        cv2.imshow("images", newImage)
-        key = cv2.waitKey(0)
+        #cv2.imshow("images", newImage)
+        #cv2.imshow("images", newImage)
+        #key = cv2.waitKey(0)
         # if the 'q' key is pressed, stop the loop
-        if key & 0xFF == ord("q"):
-            break
+        #if key & 0xFF == ord("q"):
+        #    break
     cv2.destroyAllWindows()
+
+    accItems = np.array(list(accDict.values()))
+    jacItems = np.array(list(jacDict.values()))
+
+    print("Accuracy mean: ")
+    print(accItems.mean())
+    print("Accuracy std: ")
+    print(accItems.std())
+
+    print("Jaccard mean: ")
+    print(jacItems.mean())
+    print("Jaccard std: ")
+    print(jacItems.std())
+
     return
 
 
@@ -136,3 +190,16 @@ def main2():
 
 main1()
 #main2()
+
+#def tInt(x):
+#    return int(x)
+#
+#def findFiles():
+#    turnInt = np.vectorize(tInt)
+#    dir = "./Images/GT/"
+#    for imageName in glob.glob("./Images/GT/*.jpg"):
+#        imageNumber = turnInt(re.findall(r'\d+', imageName))[0]
+#        os.rename(imageName, os.path.join(dir, str(imageNumber) + '.jpg'))
+#
+#
+#findFiles()

@@ -74,7 +74,6 @@ def main1():
         imageNumber = turnInt(re.findall(r'\d+', imageName))[0]
         imageGtName = gtDir + str(imageNumber) + ".jpg"
         ImageGt = cv2.imread(imageGtName, 0)
-        gtNonZero = np.count_nonzero(ImageGt)
         ImageGt = (ImageGt != 0)
         ImageGtGS = np.uint8(np.where(ImageGt, 255, 0))
         
@@ -82,8 +81,6 @@ def main1():
         frame = cv2.imread(imageName)
         mapF = vectorized_form(frame)
         mapGS = np.uint8(np.where(mapF, 255, 0))
-        newImage = cv2.bitwise_and(frame, frame, mask=mapGS)
-        classNonZero = np.count_nonzero(mapGS)
 
         #cv2.imwrite(str(imageNumber)+"-Mask.png", mapGS)
 
@@ -133,60 +130,60 @@ def main1():
     return
 
 
-def main2():
-    # construct the argument parse and parse the arguments
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-f", "--full", help="Use the flags to set the execution type.", action="store_true")
-    args = ap.parse_args()
-
-    if not args.full:
-        imageTrain = np.array([11, 24, 44, 83, 331, 429, 789, 841], dtype="uint32")
-        imageResults = np.array([243, 278], dtype="uint32")
-        images = "./Images/SkinDataset/ORI"
-        imagesGt = "./Images/SkinDataset/GT"
-    else:
-        imageTrain = np.array(np.arange(1, 783, dtype="uint32"))
-        imageConsolidate = np.array(np.arange(783, 951, dtype="uint32"))
-        imageResults = np.array(np.arange(951, 1119, dtype="uint32"))
-        images = "./Images/ORI"
-        imagesGt = "./Images/GT"
-
-    # define the upper and lower boundaries of the HSV pixel
-    # intensities to be considered 'skin'
-    lower = np.array([0, 48, 80], dtype="uint8")
-    upper = np.array([20, 255, 255], dtype="uint8")
-
-    for imageName in glob.glob(images + "/Test/*.jpg"):
-        # grab the current frame
-        frame = cv2.imread(imageName)
-
-        # resize the frame, convert it to the HSV color space,
-        # and determine the HSV pixel intensities that fall into
-        # the speicifed upper and lower boundaries
-        frame = imutils.resize(frame, width=400)
-        converted = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        skinMask = cv2.inRange(converted, lower, upper)
-
-        # apply a series of erosions and dilations to the mask
-        # using an elliptical kernel
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
-        skinMask = cv2.erode(skinMask, kernel, iterations=2)
-        skinMask = cv2.dilate(skinMask, kernel, iterations=2)
-
-        # blur the mask to help remove noise, then apply the
-        # mask to the frame
-        skinMask = cv2.GaussianBlur(skinMask, (3, 3), 0)
-        skin = cv2.bitwise_and(frame, frame, mask=skinMask)
-
-        # show the skin in the image along with the mask
-        cv2.imshow("images", np.hstack([frame, skin]))
-
-        # if the 'q' key is pressed, stop the loop
-        key = cv2.waitKey(0)
-        if key & 0xFF == ord("q"):
-            break
-
-    cv2.destroyAllWindows()
+# def main2():
+#     # construct the argument parse and parse the arguments
+#     ap = argparse.ArgumentParser()
+#     ap.add_argument("-f", "--full", help="Use the flags to set the execution type.", action="store_true")
+#     args = ap.parse_args()
+#
+#     if not args.full:
+#         imageTrain = np.array([11, 24, 44, 83, 331, 429, 789, 841], dtype="uint32")
+#         imageResults = np.array([243, 278], dtype="uint32")
+#         images = "./Images/SkinDataset/ORI"
+#         imagesGt = "./Images/SkinDataset/GT"
+#     else:
+#         imageTrain = np.array(np.arange(1, 783, dtype="uint32"))
+#         imageConsolidate = np.array(np.arange(783, 951, dtype="uint32"))
+#         imageResults = np.array(np.arange(951, 1119, dtype="uint32"))
+#         images = "./Images/ORI"
+#         imagesGt = "./Images/GT"
+#
+#     # define the upper and lower boundaries of the HSV pixel
+#     # intensities to be considered 'skin'
+#     lower = np.array([0, 48, 80], dtype="uint8")
+#     upper = np.array([20, 255, 255], dtype="uint8")
+#
+#     for imageName in glob.glob(images + "/Test/*.jpg"):
+#         # grab the current frame
+#         frame = cv2.imread(imageName)
+#
+#         # resize the frame, convert it to the HSV color space,
+#         # and determine the HSV pixel intensities that fall into
+#         # the speicifed upper and lower boundaries
+#         frame = imutils.resize(frame, width=400)
+#         converted = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+#         skinMask = cv2.inRange(converted, lower, upper)
+#
+#         # apply a series of erosions and dilations to the mask
+#         # using an elliptical kernel
+#         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
+#         skinMask = cv2.erode(skinMask, kernel, iterations=2)
+#         skinMask = cv2.dilate(skinMask, kernel, iterations=2)
+#
+#         # blur the mask to help remove noise, then apply the
+#         # mask to the frame
+#         skinMask = cv2.GaussianBlur(skinMask, (3, 3), 0)
+#         skin = cv2.bitwise_and(frame, frame, mask=skinMask)
+#
+#         # show the skin in the image along with the mask
+#         cv2.imshow("images", np.hstack([frame, skin]))
+#
+#         # if the 'q' key is pressed, stop the loop
+#         key = cv2.waitKey(0)
+#         if key & 0xFF == ord("q"):
+#             break
+#
+#     cv2.destroyAllWindows()
 
 main1()
 #main2()
